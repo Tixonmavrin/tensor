@@ -41,18 +41,21 @@ class Tensor:
     def __init__(self, data: "Tensor", requires_grad: bool = False, dtype: str = None):
         if is_tensor(data):
             self._data = data._data
+            if dtype is None:
+                self._dtype = data._dtype
         else:
             self._data = to_ndarray(data)
-        self._requires_grad = requires_grad
-
-        self._grad = None
-        self._grad_fn = None
+            if dtype is None:
+                self._dtype = self._data.dtype
 
         if dtype is not None:
             self._dtype = dtype
             self._data = self._data.astype(self._dtype)
-        else:
-            self._dtype = self._data.dtype
+
+        self._requires_grad = requires_grad
+
+        self._grad = None
+        self._grad_fn = None
 
     @property
     def dtype(self) -> np.ndarray:
@@ -105,7 +108,7 @@ class Tensor:
         return self._data
 
     def detach(self) -> "Tensor":
-        return Tensor(data=self._data)
+        return Tensor(data=self._data, dtype=self._dtype)
 
     @classmethod
     def zeros(cls, *shape, **kwargs):
