@@ -1,0 +1,28 @@
+# Check lint
+name: Lint
+
+# Start checking on push and pull_request
+on: [push, pull_request]
+
+# Jobs
+jobs:
+
+  # Lint job
+  lint:
+  
+    # Start program on ubuntu
+    runs-on: ubuntu-latest
+    
+    # Check steps
+    steps:
+    
+      # Add checkout
+      - uses: actions/checkout@v2
+      
+      # Add setup-python
+      - uses: actions/setup-python@v2
+      
+      # Add black code checker
+      - uses: psf/black@stable
+        with:
+          args: ". --check"
