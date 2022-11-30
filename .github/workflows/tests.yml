@@ -22,5 +22,5 @@ jobs:
       # Start testing
       - name: Test
         run: |
-          pip install -r requirements.txt
-          pytest tests/*
+          python3 pip install -r requirements.txt
+          python3 -m pytest tests/*
