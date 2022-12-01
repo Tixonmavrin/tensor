@@ -501,9 +501,7 @@ class Tensor:
         out = Tensor(
             data=np.mean(
                 self._data,
-                axis=tuple(dim)
-                if (dim is not None) and (not isinstance(dim, int))
-                else dim,
+                axis=tuple(dim) if dim is not None else dim,
                 keepdims=keepdims,
             ),
             requires_grad=self.requires_grad,
