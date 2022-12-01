@@ -10,3 +10,9 @@ A simple tensor implementation similar to pytorch but with a different API.
 
 3. Run examples:
 `python3 examples.py`
+
+Currently, in the backward function, the old tensor gradient is replaced by the new one. 
+
+It is also possible to make a backprop for the gradient that we pass to the backward function. 
+
+This behavior is worth revisiting. The gradients may need to be copied beforehand.
