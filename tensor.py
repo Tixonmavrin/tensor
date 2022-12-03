@@ -569,7 +569,6 @@ class Tensor:
                 )
                 grad_parts = second_part - first_part
 
-                grad_result = Tensor(grad_parts.transpose(0, 2, 1))
                 grad_result = (
                     grad_formatted.view(
                         grad_formatted.size(0), 1, grad_formatted.size(1)
