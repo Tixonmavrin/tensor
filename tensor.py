@@ -111,16 +111,42 @@ class Tensor:
         return Tensor(data=self._data, dtype=self._dtype)
 
     @classmethod
-    def zeros(cls, *shape, **kwargs):
+    def zeros(cls, *shape, **kwargs) -> "Tensor":
         return cls(np.zeros(shape, dtype=cls.BASEDTYPE), **kwargs)
 
     @classmethod
-    def ones(cls, *shape, **kwargs):
+    def ones(cls, *shape, **kwargs) -> "Tensor":
         return cls(np.ones(shape, dtype=cls.BASEDTYPE), **kwargs)
 
     @classmethod
-    def randn(cls, *shape, **kwargs):
+    def randn(cls, *shape, **kwargs) -> "Tensor":
         return cls(np.random.randn(*shape).astype(cls.BASEDTYPE), **kwargs)
+
+    @classmethod
+    def uniform(
+        cls,
+        low: float = 0.0,
+        high: float = 1.0,
+        size: Optional[Union[int, Tuple]] = None,
+        **kwargs
+    ) -> "Tensor":
+        return cls(
+            np.random.uniform(low=low, high=high, size=size).astype(cls.BASEDTYPE),
+            **kwargs
+        )
+
+    @classmethod
+    def normal(
+        cls,
+        mean: float = 0.0,
+        std: float = 1.0,
+        size: Optional[Union[int, Tuple]] = None,
+        **kwargs
+    ) -> "Tensor":
+        return cls(
+            np.random.normal(loc=mean, scale=std, size=size).astype(cls.BASEDTYPE),
+            **kwargs
+        )
 
     def fill_(self, val: float) -> None:
         self._data.fill(val)
@@ -532,6 +558,22 @@ class Tensor:
             out._grad_fn = grad_relu
         return out
 
+    def leaky_relu(self, negative_slope: float = 0.01) -> "Tensor":
+        out = Tensor(
+            data=np.maximum(self._data * negative_slope, self._data),
+            requires_grad=self.requires_grad,
+        )
+        if out.requires_grad:
+
+            def grad_relu(grad: "Tensor") -> None:
+                leaky_grad = np.ones_like(self._data)
+                leaky_grad[self._data < 0] = negative_slope
+
+                self.backward(grad * leaky_grad)
+
+            out._grad_fn = grad_relu
+        return out
+
     def softmax(self, dim: int = -1) -> "Tensor":
         dims = list(range(self.ndim))
         dim = dims[dim]
@@ -585,6 +627,10 @@ class Tensor:
             out._grad_fn = grad_softmax
         return out
 
+    def log_softmax(self, dim: int = -1) -> "Tensor":
+        # TODO: can be more stable
+        return self.softmax(dim).log()
+
     def _positive_sigmoid(self, x):
         return 1 / (1 + np.exp(-x))
 
@@ -612,6 +658,25 @@ class Tensor:
                 self.backward(grad * out_data * (1.0 - out_data))
 
             out._grad_fn = grad_sigmoid
+        return out
+
+    def dropout(self, p: float = 0.5, training: bool = True):
+        mask = np.random.binomial(1, 1 - p, size=self.shape) / (1.0 - p)
+
+        out_data = self._data
+        if training:
+            out_data = mask * out_data
+
+        out = Tensor(data=out_data, requires_grad=self.requires_grad)
+        if out.requires_grad:
+
+            def grad_dropout(grad: "Tensor") -> None:
+                if training:
+                    self.backward(grad * mask)
+                else:
+                    self.backward(grad)
+
+            out._grad_fn = grad_dropout
         return out
 
     def __str__(self):
