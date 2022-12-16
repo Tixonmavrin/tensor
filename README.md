@@ -4,9 +4,9 @@ A simple tensor implementation similar to pytorch but with a different API.
 
 This is part of educational pytorch-like library implementation. In the future, there will be links to other parts here.
 
-### Getting started (1 option):
+### Getting started:
 
-0. Install python3, git and do `https://github.com/Tixonmavrin/tensor`
+0. Install python3, git and do `git clone https://github.com/Tixonmavrin/tensor` and `cd tensor`
 
 1. Install requirements:
 `pip3 install -r requirements.txt` or `pip3 install -r requirements_tests.txt` (with libs for testing)
@@ -59,6 +59,7 @@ In backward, grad from backprop is added to the current grad. So the new grad (w
 - [ ] Get item
 - [ ] Padding
 - [ ] Batch Normalization
+- [ ] Layer Normalization
 
 #### Activation Functions
 
