@@ -35,7 +35,7 @@ In backward, grad from backprop is added to the current grad. So the new grad (w
 - [x] Divide
 - [x] Power (number)
 - [x] Power (tensor) (may be add eps in future)
-- [x] Power (tensor, in even degrees)
+- [ ] Power (tensor, in even degrees)
 - [x] Matmul
 - [x] Negative
 - [x] Exponential
