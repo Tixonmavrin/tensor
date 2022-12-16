@@ -35,10 +35,15 @@ def reshape_op_binary(data: "Tensor", true_shape: Tuple[int]):
 
 
 class Tensor:
-    EPS = 1e-12
     BASEDTYPE = np.float32
 
-    def __init__(self, data: "Tensor", requires_grad: bool = False, dtype: str = None):
+    def __init__(
+        self,
+        data: "Tensor",
+        requires_grad: bool = False,
+        dtype: str = None,
+        use_cache_grad: bool = False,
+    ):
         if is_tensor(data):
             self._data = data._data
             if dtype is None:
@@ -56,6 +61,9 @@ class Tensor:
 
         self._grad = None
         self._grad_fn = None
+
+        self._use_cache_grad = use_cache_grad
+        self._cache_grad = None
 
     @property
     def dtype(self) -> np.ndarray:
@@ -103,6 +111,22 @@ class Tensor:
     @grad_fn.setter
     def grad_fn(self, grad_fn: np.ndarray) -> None:
         self._grad_fn = grad_fn
+
+    @property
+    def use_cache_grad(self) -> bool:
+        return self._use_cache_grad
+
+    @use_cache_grad.setter
+    def use_cache_grad(self, use_cache_grad: bool) -> None:
+        self._use_cache_grad = use_cache_grad
+
+    @property
+    def cache_grad(self) -> "Tensor":
+        return self._cache_grad
+
+    @cache_grad.setter
+    def cache_grad(self, cache_grad: "Tensor") -> None:
+        self._cache_grad = cache_grad
 
     def numpy(self):
         return self._data
@@ -191,6 +215,9 @@ class Tensor:
     def backward(self, grad: Optional[np.ndarray] = None) -> None:
         if grad is None:
             grad = Tensor(1.0)
+
+        if self._use_cache_grad:
+            self._cache_grad = grad
 
         if self.requires_grad:
             if self._grad is None:
@@ -306,11 +333,11 @@ class Tensor:
                         self._data.shape,
                     )
                 )
-                # TODO: check that epsilon usage is correct here
-                # may be just fill 0 or use only log (without epsilon)
+                # TODO: may be use np.log(self._data + Tensor.EPS) here or fill with 0
+                # Also add other pow function for even degrees
                 other.backward(
                     reshape_op_binary(
-                        grad * out._data * np.log(self._data + Tensor.EPS),
+                        grad * out._data * np.log(self._data),
                         other._data.shape,
                     )
                 )
@@ -352,8 +379,6 @@ class Tensor:
                 self_data = self._data
                 other_data = other._data
 
-                # TODO: remove this block
-                # May be use benefits of np.dot
                 if grad.ndim <= 1:
                     grad = grad.view(1, -1)
                 if other_data.ndim <= 1:
@@ -362,7 +387,6 @@ class Tensor:
                     self_data = self_data.reshape(1, -1)
 
                 self.backward((grad @ other_data.T).view(*self._data.shape))
-                # TODO: Use .T here instead of __rmatmul__
                 other.backward((grad.__rmatmul__(self_data.T)).view(*other._data.shape))
 
             out._grad_fn = grad_mm
@@ -607,7 +631,7 @@ class Tensor:
                 second_part = np.einsum(
                     "bi,ij->bij",
                     out_data_formatted,
-                    np.eye(self.size(dim), self.size(dim), dtype=self._dtype),
+                    np.eye(self.size(dim), dtype=self._dtype),
                 )
                 grad_parts = second_part - first_part
 
@@ -628,8 +652,51 @@ class Tensor:
         return out
 
     def log_softmax(self, dim: int = -1) -> "Tensor":
-        # TODO: can be more stable
-        return self.softmax(dim).log()
+        dims = list(range(self.ndim))
+        dim = dims[dim]
+        out_data = self._data - self._data.max(axis=dim, keepdims=True)
+        out_data = out_data - np.log(np.exp(out_data).sum(axis=dim, keepdims=True))
+        out_data_exp = np.exp(out_data)
+
+        out = Tensor(data=out_data, requires_grad=self.requires_grad)
+        if out.requires_grad:
+
+            def grad_log_softmax(grad: "Tensor") -> None:
+                if out_data.shape != grad.shape:
+                    raise RuntimeError(
+                        "Bad softmax. If you see this error, open issue, please"
+                    )
+
+                new_pose = (
+                    list(range(dim)) + list(range(dim + 1, out_data_exp.ndim)) + [dim]
+                )
+
+                out_data_exp_transposed = out_data_exp.transpose(new_pose)
+                out_data_exp_transposed_shape = list(out_data_exp_transposed.shape)
+                out_data_exp_formatted = out_data_exp_transposed.reshape(
+                    -1, 1, out_data_exp.shape[dim]
+                )
+                grad_formatted = grad.permute(*new_pose).view(-1, out_data.shape[dim])
+
+                grad_parts = (
+                    np.eye(self.size(dim), dtype=self._dtype) - out_data_exp_formatted
+                )
+
+                grad_result = (
+                    grad_formatted.view(
+                        grad_formatted.size(0), 1, grad_formatted.size(1)
+                    )
+                    * grad_parts.transpose(0, 2, 1)
+                ).sum(-1)
+
+                self.backward(
+                    grad_result.view(*out_data_exp_transposed_shape).permute(
+                        *np.argsort(new_pose)
+                    )
+                )
+
+            out._grad_fn = grad_log_softmax
+        return out
 
     def _positive_sigmoid(self, x):
         return 1 / (1 + np.exp(-x))

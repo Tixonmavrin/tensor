@@ -26,7 +26,6 @@ def unary_test_grad(data, unary_func, loss_fn):
     result_torch.backward()
     result_tensor = loss_fn(result_tensor)
     result_tensor.backward()
-    print(a_torch.grad.numpy(), a_tensor.grad.numpy())
     assert np.isclose(a_torch.grad.numpy(), a_tensor.grad.numpy()).all()
 
 
