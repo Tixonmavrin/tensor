@@ -59,6 +59,7 @@ In backward, grad from backprop is added to the current grad. So the new grad (w
 - [ ] Get item
 - [ ] Padding
 - [ ] Batch Normalization
+- [ ] Layer Normalization
 
 #### Activation Functions
 
