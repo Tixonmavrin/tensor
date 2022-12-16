@@ -44,9 +44,17 @@ def test_unary_operations_positive():
         lambda x: x.mean([0]),
         lambda x: x.mean([-1]),
         lambda x: x.relu(),
+        lambda x: x.leaky_relu()
+        if isinstance(x, Tensor)
+        else torch.nn.functional.leaky_relu(x),
         lambda x: x.softmax(0),
         lambda x: x.softmax(-1),
+        lambda x: x.log_softmax(0),
+        lambda x: x.log_softmax(-1),
         lambda x: x.sigmoid(),
+        lambda x: x.dropout(training=False)
+        if isinstance(x, Tensor)
+        else torch.nn.functional.dropout(x, training=False),
     ]:
         for data in [
             [0.001, 2.0, 3.0, 4.5],
@@ -79,9 +87,17 @@ def test_unary_operations_grad_positive():
         lambda x: x.mean([0]),
         lambda x: x.mean([-1]),
         lambda x: x.relu(),
+        lambda x: x.leaky_relu()
+        if isinstance(x, Tensor)
+        else torch.nn.functional.leaky_relu(x),
         lambda x: x.softmax(0),
         lambda x: x.softmax(-1),
+        lambda x: x.log_softmax(0),
+        lambda x: x.log_softmax(-1),
         lambda x: x.sigmoid(),
+        lambda x: x.dropout(training=False)
+        if isinstance(x, Tensor)
+        else torch.nn.functional.dropout(x, training=False),
     ]:
         for data in [
             [0.001, 2.0, 3.0, 4.5],
@@ -118,9 +134,17 @@ def test_unary_operations_with_negative():
         lambda x: x.mean([0]),
         lambda x: x.mean([-1]),
         lambda x: x.relu(),
+        lambda x: x.leaky_relu()
+        if isinstance(x, Tensor)
+        else torch.nn.functional.leaky_relu(x),
         lambda x: x.softmax(0),
         lambda x: x.softmax(-1),
+        lambda x: x.log_softmax(0),
+        lambda x: x.log_softmax(-1),
         lambda x: x.sigmoid(),
+        lambda x: x.dropout(training=False)
+        if isinstance(x, Tensor)
+        else torch.nn.functional.dropout(x, training=False),
     ]:
         for data in [
             [-0.001, -2.0, -3.0, -4.5],
@@ -154,9 +178,17 @@ def test_unary_operations_grad_with_negative():
         lambda x: x.mean([0]),
         lambda x: x.mean([-1]),
         lambda x: x.relu(),
+        lambda x: x.leaky_relu()
+        if isinstance(x, Tensor)
+        else torch.nn.functional.leaky_relu(x),
         lambda x: x.softmax(0),
         lambda x: x.softmax(-1),
+        lambda x: x.log_softmax(0),
+        lambda x: x.log_softmax(-1),
         lambda x: x.sigmoid(),
+        lambda x: x.dropout(training=False)
+        if isinstance(x, Tensor)
+        else torch.nn.functional.dropout(x, training=False),
     ]:
         for data in [
             [-0.001, -2.0, -3.0, -4.5],
